@@ -75,7 +75,7 @@ $(document).ready(function() {
         console.log('Merge preview data:', data);
         $('#merge-preview-area').html('<div class="text-center">Loading preview...</div>');
         $.get({
-            url: "/contacts/merge-preview",
+            url: "/admin/contacts/merge-preview",
             data: data,
             beforeSend: function(xhr) {
                 xhr.setRequestHeader('X-CSRF-TOKEN', $('meta[name="csrf-token"]').attr('content'));
@@ -118,27 +118,37 @@ $(document).ready(function() {
     // Delete Contact logic
     $(document).on('click', '.btn-delete-contact', function() {
         var contactId = $(this).data('contact-id');
-        if(confirm('Are you sure you want to delete this contact?')) {
-            $.ajax({
-                url: '/contacts/' + contactId,
-                type: 'DELETE',
-                headers: {
-                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                },
-                success: function(response) {
-                    Swal.fire({icon: 'success', text: response.message || 'Contact deleted successfully!'});
-                    // Refresh the contacts list
-                    if(typeof fetchContacts === 'function') {
-                        fetchContacts();
-                    } else {
-                        location.reload();
+        Swal.fire({
+            title: 'Are you sure?',
+            text: 'You won\'t be able to revert this!',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, delete it!'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: '/contacts/' + contactId,
+                    type: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                    },
+                    success: function(response) {
+                        Swal.fire({icon: 'success', text: response.message || 'Contact deleted successfully!'});
+                        // Refresh the contacts list
+                        if(typeof fetchContacts === 'function') {
+                            fetchContacts();
+                        } else {
+                            location.reload();
+                        }
+                    },
+                    error: function(xhr) {
+                        Swal.fire({icon: 'error', text: xhr.responseJSON?.message || 'Failed to delete contact.'});
                     }
-                },
-                error: function(xhr) {
-                    Swal.fire({icon: 'error', text: xhr.responseJSON?.message || 'Failed to delete contact.'});
-                }
-            });
-        }
+                });
+            }
+        });
     });
 
 }); 

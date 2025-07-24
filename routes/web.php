@@ -29,7 +29,7 @@ Route::get('/dashboard', [HomeController::class, 'dashboard'])->name('dashboard'
 Route::resource('contacts', ContactController::class);
 Route::resource('custom-fields', CustomFieldController::class);
 Route::post('/contacts/merge', [ContactController::class, 'merge']);
-Route::get('/contacts/merge-preview', [ContactController::class, 'getMergePreview'])->name('contacts.merge-preview');
+Route::get('/admin/contacts/merge-preview', [ContactController::class, 'getMergePreview'])->name('contacts.merge-preview');
 
 Route::middleware('guest')->group(function () {
     Route::get('login', [AuthController::class, 'showLogin'])->name('login');
