@@ -10,7 +10,7 @@ $(document).ready(function() {
         loadCustomFields();
         setActiveNav(this);
     });
-    // Initial load
+
     loadContacts();
 
     function setActiveNav(el) {
@@ -20,19 +20,19 @@ $(document).ready(function() {
 
     // Load Contacts List
     function loadContacts() {
-        $.get('/admin/contacts', function(data) {
+        $.get('/contacts', function(data) {
             $('#main-content').html(data);
         });
     }
 
     // Load Custom Fields List
     function loadCustomFields() {
-        $.get('/admin/custom-fields', function(data) {
+        $.get('/custom-fields', function(data) {
             $('#main-content').html(data);
         });
     }
 
-    // Placeholder: Add/Edit Contact modal logic
+    // Add/Edit Contact modal logic
     $(document).on('click', '.btn-add-contact, .btn-edit-contact', function(e) {
         e.preventDefault();
         var url = $(this).data('url');
@@ -43,7 +43,7 @@ $(document).ready(function() {
         });
     });
 
-    // Placeholder: Add/Edit Custom Field modal logic
+    // Add/Edit Custom Field modal logic
     $(document).on('click', '.btn-add-custom-field, .btn-edit-custom-field', function(e) {
         e.preventDefault();
         var url = $(this).data('url');
@@ -72,11 +72,20 @@ $(document).ready(function() {
         e.preventDefault();
         var form = $(this);
         var data = form.serialize();
+        console.log('Merge preview data:', data);
         $('#merge-preview-area').html('<div class="text-center">Loading preview...</div>');
-        $.get("/contacts/merge-preview", data, function(response) {
-            $('#merge-preview-area').html(response.html || response);
-            // Change button to 'Confirm Merge'
-            $('#merge-contact-form .btn-primary').text('Confirm Merge');
+        $.get({
+            url: "/contacts/merge-preview",
+            data: data,
+            beforeSend: function(xhr) {
+                xhr.setRequestHeader('X-CSRF-TOKEN', $('meta[name="csrf-token"]').attr('content'));
+            },
+            success: function(response) {
+                console.log('Merge preview response:', response);
+                $('#merge-preview-area').html(response.html || response);
+                // Change button to 'Confirm Merge'
+                $('#merge-contact-form .btn-primary').text('Confirm Merge');
+            }
         });
     });
 
@@ -86,14 +95,22 @@ $(document).ready(function() {
             e.preventDefault();
             var form = $('#merge-contact-form');
             var data = form.serialize();
-            $.post("/contacts/merge", data, function(response) {
-                if(response.success) {
-                    window.location.href = response.redirect_url;
-                } else {
-                    alert(response.message || 'Merge failed.');
+            $.post({
+                url: "/contacts/merge",
+                data: data,
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
+                success: function(response) {
+                    if(response.success) {
+                        window.location.href = response.redirect_url;
+                    } else {
+                        Swal.fire({icon: 'error', text: response.message || 'Merge failed.'});
+                    }
+                },
+                error: function(xhr) {
+                    Swal.fire({icon: 'error', text: xhr.responseJSON?.message || 'Merge failed.'});
                 }
-            }).fail(function(xhr) {
-                alert(xhr.responseJSON?.message || 'Merge failed.');
             });
         }
     });
@@ -103,13 +120,13 @@ $(document).ready(function() {
         var contactId = $(this).data('contact-id');
         if(confirm('Are you sure you want to delete this contact?')) {
             $.ajax({
-                url: '/api/contacts/' + contactId,
+                url: '/contacts/' + contactId,
                 type: 'DELETE',
                 headers: {
                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                 },
                 success: function(response) {
-                    alert(response.message || 'Contact deleted successfully!');
+                    Swal.fire({icon: 'success', text: response.message || 'Contact deleted successfully!'});
                     // Refresh the contacts list
                     if(typeof fetchContacts === 'function') {
                         fetchContacts();
@@ -118,7 +135,7 @@ $(document).ready(function() {
                     }
                 },
                 error: function(xhr) {
-                    alert(xhr.responseJSON?.message || 'Failed to delete contact.');
+                    Swal.fire({icon: 'error', text: xhr.responseJSON?.message || 'Failed to delete contact.'});
                 }
             });
         }
